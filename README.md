@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://i.imgur.com/hFokdsQ.png" width="64">
+  <img src="https://i.imgur.com/zD9Q9sk.png" width="64">
   <h1 align="center">UnifiedBanBot</h1>
   <p align="center">This Telegram bot checks if new chat users are in blacklist and, with a positive result, blocks them.</p>
 </div>
