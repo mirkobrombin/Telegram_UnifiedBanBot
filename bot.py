@@ -42,14 +42,7 @@ def check_blacklist(bot, update):
   except AttributeError:
     pass
     
-def main():git clone 
-https://gitlab.com/brombinmirko/Telegram_UnifiedBanBot.git
-
-cd Telegram_UnifiedBanBot
-touch README.md
-git add README.md
-git commit -m "add README"
-git push -u origin master
+def main():
     updater=Updater(bot_token)
     dp = updater.dispatcher
     dp.add_error_handler(error)
@@ -59,3 +52,4 @@ git push -u origin master
 
 if __name__=='__main__':
     main()
+
