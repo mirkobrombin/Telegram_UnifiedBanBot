@@ -6,6 +6,8 @@
 
 <br/>
 
+### Attention, the source does not include updates of the last 4 releases.
+
 <div align="center">
    <a href="https://gitlab.com/brombinmirko/Telegram_UnifiedBanBot/blob/master/LICENSE">
     <img src="https://img.shields.io/badge/License-GPL--3.0-blue.svg">
