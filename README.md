@@ -5,8 +5,6 @@
   <p align="center">The new version 2.0 was designed from scratch and is online and operational on @unifiedban_bot. The source code will be published as soon as possible (Normal working times).</p>
   <p>
   <p align="center">This Telegram bot checks if new chat users are in blacklist and, with a positive result, blocks them.</p>
-  <br />
-  <b align="center">Warning: the git repository does not include updates of the last 4 versions.</b>
 </div>
 <br/>
 
