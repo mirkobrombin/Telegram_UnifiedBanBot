@@ -6,15 +6,17 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.error import TelegramError, Unauthorized, BadRequest,TimedOut, ChatMigrated, NetworkError
-import logging, urllib, json, sys, re, MySQLdb, html
+import logging, json, sys, re, MySQLdb, html
 from requests import get, post, exceptions
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import config
 import strings
 import antispam
 from handler import log_enabled
-
-reload(sys)  
-sys.setdefaultencoding('utf8')
+from importlib import reload
 
 def get_hash(chat_id):
   if chat_id < 0:
@@ -34,12 +36,15 @@ def log_operation(flag, chat_id, user_id):
     cur.close()
     db.close()
 
-def log_blocked_content(flag, chat_id, user_id, body):
+# use this for dashboard stats
+def log_blocked_content(flag, chat_id, user_id, status):
   if log_enabled:
+    if status:
+       status = 1
     db=MySQLdb.connect(config.database['server'],config.database['user'],config.database['password'],config.database['name'])
     db.autocommit(True)
     cur=db.cursor()
-    cur.execute("INSERT INTO BlockedContent (Flag, Chat_ID, User_ID, Body) VALUES ('"+flag+"', (SELECT ID FROM Groups WHERE Chat_ID = "+str(chat_id)+"), "+str(user_id)+", '"+html.escape(str(body))+"')")
+    cur.execute("INSERT INTO BlockedContent (Flag, Chat_ID, User_ID, Status) VALUES ('"+flag+"', (SELECT ID FROM Groups WHERE Chat_ID = "+str(chat_id)+"), "+str(user_id)+", "+status+")")
     cur.close()
     db.close()
 

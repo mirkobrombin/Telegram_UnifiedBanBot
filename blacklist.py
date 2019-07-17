@@ -6,14 +6,17 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.error import TelegramError, Unauthorized, BadRequest,TimedOut, ChatMigrated, NetworkError
-import logging, urllib, json, sys, MySQLdb
+import logging, json, sys, MySQLdb
 import config
 import strings
 import antispam
 import util
+from importlib import reload
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 
-reload(sys)  
-sys.setdefaultencoding('utf8')
 
 def check_in_blacklist(uid):
   db=MySQLdb.connect(config.database['server'],config.database['user'],config.database['password'],config.database['name'])
@@ -23,16 +26,13 @@ def check_in_blacklist(uid):
   row=cur.fetchone()
   if cur.rowcount:
     res=True
-    print(str("User %s in Blacklist, removed!" % str(uid)))
   else:
     res=False
-    print(str("User %s not in Blacklist" % str(uid)))
   cur.close()
   db.close()
   return res
 
 def check(bot, update):
-  print("Checking blacklist..")
   blacklist=False
   
   try:

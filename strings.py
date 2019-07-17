@@ -3,6 +3,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+VERSION = "1.3"
+
 HELP_MESSAGE = "<b>unified/ban command list</b>\n \
 /configure [Open configuration menu]\n \
 /check [Check bot permissions]\n \
@@ -20,17 +22,19 @@ REPORT_HASH_CODE = "\n\nhash_code: #%s"
 
 DASH_USER_SIGN = UNIFIEDBANREPORT_PREFIX+"User %s with User_ID %s signed in Dashboard for Chat (%s) with Chat_ID %s"+REPORT_HASH_CODE
 
-SYNCING_BLACKLIST = "<i>[» Syncing the chat «]</i>\nThis will take a <b>few minutes ..</b>\nThis action is only performed when major changes are made to the Blacklist."
-SYNC_COMPLETE = "<b>[Chat synchronized!]</b>\nBlocked %s malicious users.\n<a href='https://t.me/unifiedban_news'>> More info</a>"
-DASH_SYNCING_BLACKLIST = "Operation required from Dashboard.\n"+SYNCING_BLACKLIST
+RESTART = "Reboot complete.\n<b>v.</b>"+VERSION
 
-SYNC_REPORT = UNIFIEDBANREPORT_PREFIX+"Chat %s synchronized with the Blacklist, added %s User_ID"+REPORT_HASH_CODE
+SYNCING_BLACKLIST = "<b>» Syncing the chat blacklist ..</b>\n"
+SYNC_COMPLETE = "<b>» Sync complete</b>\nBlocked %s malicious users.\n<a href='https://t.me/unifiedban_news'>> More info</a>"
+DASH_SYNCING_BLACKLIST = "Automated operation.\n"+SYNCING_BLACKLIST
 
-BAN_REPORT = UNIFIEDBANREPORT_PREFIX+"User %s with ID %s in the Blacklist, removed from chat %s."+REPORT_HASH_CODE
+SYNC_REPORT = UNIFIEDBANREPORT_PREFIX+"Sync complete for chat %s: added %s User_ID"+REPORT_HASH_CODE
 
-VERIFIED_USER = "%s is a verified user of unified/ban.\n<i>He can perform maintenance</i>"
+BAN_REPORT = UNIFIEDBANREPORT_PREFIX+"User %s (%s) in Blacklist, removed from chat %s."+REPORT_HASH_CODE
 
-USER_BLACKLIST = "<i>%s added to the Blacklist</i>"
+VERIFIED_USER = "%s is a <b>verified</b> operator.\n<i>It will perform routine operations and initial maintenance.</i>"
+
+USER_BLACKLIST = "<i>%s -> Blacklist</i>"
 USER_ALREADY_IN_BLACKLIST = "User %s already in Blacklist."
 USER_NOT_IN_BLACKLIST = "User %s not in Blacklist."
 USER_BAN = "<i>User %s banned!</i>"
@@ -64,7 +68,7 @@ LEAVING="[@unifiedban_bot removed from this Chat!]"
 DEBUG_UPDATE="[DEBUG_MESSAGE] chat_name: %s \n chat_id: %s \n chat_user: %s \n author_id: %s \n author_user: %s \n author_name: %s \n post_text: %s"
 
 CONF_MENU_HEADER = "<b>{{%s}} - 🔧 Group configuration Menu</b>\n\n \
-- <b>Bot log:</b> \n<i>Disable log bot operations (deleted spam/scam)</i>\n \
+- <b>Bot log:</b> \n<i>Disable log bot operations (deleted spam/scam) [This configuration is only allowed from unifiedban.solutions dashboard]</i>\n \
 - <b>Spam words:</b> \n<i>Delete messages containing common spam words</i>\n \
 - <b>Spam non-west chars:</b> \n<i>Delete messages containing non-west chars</i>\n \
 - <b>Spam Telegram:</b> \n<i>Delete messages containing Telegram group link and username</i>\n \
@@ -72,14 +76,13 @@ CONF_MENU_HEADER = "<b>{{%s}} - 🔧 Group configuration Menu</b>\n\n \
 - <b>Blacklist:</b> \n<i>Kick users recognized as malicious</i>\n \
 - <b>Antiscam:</b> \n<i>Try to identify and block scams</i>\n \
 - <b>Close/Open group:</b> \n<i>Close the group to new members that will be limited until the reopening</i>"
-CONF_LOG = "📄 Bot log: [%s]"
 CONF_ANTISPAM_WORDS = "🅰️ Spam words: [%s]"
 CONF_ANTISPAM_NON_WEST = "🈵 Spam non-west chars: [%s]"
 CONF_ANTISPAM_USERNAME = "✈️ Spam Telegram: [%s]"
 CONF_ANTISPAM_USER = "📟 Spam username: [%s]"
 CONF_BLACKLIST = "🚷 Blacklist: [%s]"
 CONF_ANTISCAM = "💯 Antiscam: [%s]"
-CONF_HAMMER = "🚪 %s your group [Coming soon..]"
+CONF_HAMMER = "🚪 %s your group [beta from v2]"
 CONF_LEAVE = "Leave this chat"
 CONF_CLOSE_MENU = "Close menu"
 CONF_MENU_CLOSED = "Menu closed."

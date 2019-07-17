@@ -8,16 +8,17 @@ from telegram.ext.dispatcher import run_async
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.error import TelegramError, Unauthorized, BadRequest,TimedOut, ChatMigrated, NetworkError
 import logging, urllib, json, sys, MySQLdb, html, time, threading
+import datetime
 import config
 import strings
 import antispam
 import blacklist
 import util
 import admin
+from importlib import reload
 
-reload(sys)  
-sys.setdefaultencoding('utf8')
 log_enabled=True
+hammer = False
 
 def check_verified_user(bot, update):
   if update.message is not None and update.message.new_chat_members is not None:
@@ -34,7 +35,7 @@ def register_group(bot, update):
   db=MySQLdb.connect(config.database['server'],config.database['user'],config.database['password'],config.database['name'])
   db.autocommit(True)
   cur=db.cursor()
-  cur.execute("INSERT INTO Groups (Title, Chat_ID) VALUES ('"+db.escape_string(str(update.message.chat.title))+"', '"+str(chat_id)+"')")
+  cur.execute("INSERT INTO Groups (Title, Chat_ID) VALUES ('"+str(update.message.chat.title)+"', '"+str(chat_id)+"')")
   bot.send_message(config.channel_id, (strings.REPORT_NEW_GROUP % (html.escape(str(update.message.chat.title)), str(chat_id), util.get_hash(int(chat_id)))), parse_mode=ParseMode.HTML)
   cur.close()
   db.close()
@@ -54,21 +55,41 @@ def check_registration(bot, update):
   db.close()
   return res
 
-@run_async
+def ping(bot, update):
+  ping_starttime=time.time()
+  while True:
+    bot.send_message(-1001296469468, '<b>Status:</b> Online', parse_mode=ParseMode.HTML)
+    time.sleep(3600.0 - ((time.time() - ping_starttime) % 3600.0))
+
 def check_operations(bot, update):
   starttime=time.time()
   while True:
+    '''
+    print("[Hammer] Checking..")
+    global hammer
+    current_time = datetime.datetime.now().time()
+    start_time = datetime.time(21,00,00)
+    end_time = datetime.time(7,30,00)
+    if current_time >= start_time:
+      if hammer == False:
+        hammer = True
+        bot.send_message(cid, '<b>Gruppo chiuso.</b> Riapertura programmata per le 7:30 di domani.', parse_mode=ParseMode.HTML)
+    else:
+      if hammer == True:
+        bot.send_message(-1001376622146, '<b>Gruppo riaperto.</b>', parse_mode=ParseMode.HTML)
+    print("[Hammer] Sleeping..")
+    '''
     print("[Task] Checking..")
     db=MySQLdb.connect(config.database['server'],config.database['user'],config.database['password'],config.database['name'])
     db.autocommit(True)
     cur=db.cursor()
-    cur.execute("SELECT * FROM Operations")
+    cur.execute("SELECT * FROM Tasks")
     for row in cur.fetchall():
       print(str("[Task] Found ID %s .." % row[0]))
       
       task = row[1]
       chat_id=row[2]
-      cur.execute("DELETE FROM Operations WHERE ID = ("+str(row[0])+")")
+      cur.execute("DELETE FROM Tasks WHERE ID = ("+str(row[0])+")")
       
       if task == '!sync':
         admin.sync(bot, update, True, chat_id)
@@ -88,8 +109,22 @@ def check_operations(bot, update):
     time.sleep(60.0 - ((time.time() - starttime) % 60.0))
 
 def init(bot, update):
+  '''if update.message is not None:
+    if update.message.photo is not None:
+      photo = update.message.photo
+      #print(update)
+      try:
+        if photo[0].width == 90 and photo[0].file_size > 1050 and photo[0].file_size < 1100 and photo[0].height > 40 and photo[0].height < 50:
+          bot.send_message(config.channel_id, ('Binance spam found in Chat %s Deleted.' % update.message.chat.title), parse_mode=ParseMode.HTML)
+          bot.delete_message(update.message.chat_id, update.message.message_id)
+      except IndexError:
+        pass'''
+  pass
+  
+  ping(bot, update)
   check_operations(bot, update)
   global log_enabled
+  global hammer
   if config.debug:
     util.debug(update)
   
@@ -106,25 +141,24 @@ def init(bot, update):
     row=cur.fetchone()
     
     check_verified_user(bot, update)
-    
-    if row[3] == 1:
-      if row[4] == 1: #ConfLog
-        log_enabled=False
-      if row[5] == 1: #ConfSpamWords
-        antispam.message_text(bot, update)
-      if row[11] == 1: #ConfSpamNonWest
-        antispam.text_lang(bot, update)
-      if row[6] == 1: #ConfSpamUsername
-        antispam.message_entities(bot, update)
-        antispam.message_links(bot, update)
-      if row[7] == 1: #ConfSpamUser
-        antispam.new_user_name(bot, update)
-      if row[8] == 1: #ConfScam
-        pass
-      if row[9] == 1: #ConfBlacklist
-        blacklist.check(bot, update)
-      if row[10] == 1: #ConfHammer
-        antispam.text_lang(bot, update)
+    if row[3] is not None:
+      if row[3] == 1:
+        if row[4] == 1: #ConfLog
+          log_enabled=False
+        if row[5] == 1: #ConfSpamWords
+          antispam.message_text(bot, update)
+        if row[7] == 1: #ConfSpamUser
+          antispam.new_user_name(bot, update)
+        if row[8] == 1: #ConfScam
+          pass
+        if row[9] == 1: #ConfBlacklist
+          blacklist.check(bot, update)
+        if row[10] == 1: #ConfHammer
+          for new in update.message.new_chat_members:
+            bot.restrict_chat_member(row[2],
+    					new.id,
+    					datetime.datetime.now() + datetime.timedelta(days=1)
+    				)
     else:
       admin.leave(bot, update, True)
     

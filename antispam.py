@@ -6,15 +6,18 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.error import TelegramError, Unauthorized, BadRequest,TimedOut, ChatMigrated, NetworkError
-import logging, urllib, json, sys, re, html, urllib2, unicodedata, MySQLdb
+import logging, urllib, json, sys, re, html, unicodedata, MySQLdb
 from requests import get, post, exceptions
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
 import config
 import strings
 import antispam
 import util
+from importlib import reload
 
-reload(sys)  
-sys.setdefaultencoding('utf8')
 no_spam = dict()
 
 mix_spam_list = config.spam_words+config.telegram_domains
@@ -43,7 +46,7 @@ def text_lang(bot, update):
       else:
         chat_name = update.message.chat.title
       if all(is_latin(t) for t in text if t.isalpha()) == False:
-        util_bot_log(strings.REPORT_MESSAGE_TEXT % (html.escape(str(update.message.text)), str(update.message.from_user.name), str(chat_name), util.get_hash(int(chat_id))))
+        util_bot_log(strings.REPORT_MESSAGE_TEXT % (html.escape(str(update.message.text)), str(update.message.from_user.name), str(chat_name)+" "+str(update.message.chat.username), util.get_hash(int(chat_id))))
         bot.delete_message(update.message.chat_id, update.message.message_id)
         util.log_blocked_content('!non_west', update.message.chat_id, update.message.from_user.id, update.message.text)
   except AttributeError:
@@ -98,7 +101,7 @@ def new_user_name(bot, update):
         chat_name = update.message.chat.title
       if str(last) == "None":
         last=""
-      if any(s in str(first+last).lower() for s in mix_spam_list):
+      if any(s in str(first+" "+last).lower() for s in mix_spam_list):
         chat_id=update.message.chat_id
         util.bot_log(strings.REPORT_USER_NAME % (str(first+last), str(chat_name), util.get_hash(int(chat_id))), bot)
         bot.kick_chat_member(chat_id, new.id)
@@ -118,7 +121,7 @@ def message_text(bot, update):
           else:
             chat_name = update.message.chat.title
           chat_id=update.message.chat_id
-          util.bot_log(strings.REPORT_MESSAGE_TEXT % (str(update.message.text), str(update.message.from_user.name), str(chat_name), util.get_hash(int(chat_id))), bot)
+          util.bot_log(strings.REPORT_MESSAGE_TEXT % (str(update.message.text), str(update.message.from_user.name), str(chat_name)+" "+str(update.message.chat.username), util.get_hash(int(chat_id))), bot)
           bot.delete_message(chat_id, update.message.message_id)
           util.log_blocked_content('!spam_word', update.message.chat_id, update.message.from_user.id, update.message.text)
 
@@ -140,13 +143,14 @@ def message_entities(bot, update):
             e=update.message.text[entitie.offset:entitie.offset+entitie.length]
             if is_spam(e, False, update.message.chat_id):
               chat_id=update.message.chat_id
-              util.bot_log(strings.REPORT_MESSAGE_TEXT % (html.escape(str(update.message.text)), str(update.message.from_user.name), str(chat_name), util.get_hash(int(chat_id))), bot)
+              util.bot_log(strings.REPORT_MESSAGE_TEXT % (html.escape(str(update.message.text)), str(update.message.from_user.name), str(chat_name)+" "+str(update.message.chat.username), util.get_hash(int(chat_id))), bot)
               bot.delete_message(chat_id, update.message.message_id)
               util.log_blocked_content('!spam_telegram', update.message.chat_id, update.message.from_user.id, update.message.text)
 
 def message_links(bot, update):
   if bot.get_chat_member(update.message.chat_id, update.message.from_user.id).status not in ["creator", "administrator"] or update.message.from_user.id not in config.admin_id:
     if update.message is not None:
+      delete = False
       chat_id=update.message.chat_id
       if update.message.text is None:
         if update.message.forward_from_chat:
@@ -164,5 +168,9 @@ def message_links(bot, update):
         if url not in config.safe_urls:
           if is_spam(url, True, chat_id):
             util.bot_log(strings.REPORT_MESSAGE_URL % (str(update.message.text), str(update.message.from_user.name), str(chat_name), str(url), util.get_hash(int(chat_id))), bot)
-            bot.delete_message(chat_id, update.message.message_id)
-            util.log_blocked_content('!spam_domain', update.message.chat_id, update.message.from_user.id, update.message.text)
+            delete = True
+      if any(tgUrl in update.message.text for tgUrl in config.telegram_domains):
+        delete = True
+      if delete == True:
+        bot.delete_message(chat_id, update.message.message_id)
+        util.log_blocked_content('!spam_domain', update.message.chat_id, update.message.from_user.id, update.message.text)

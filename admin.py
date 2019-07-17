@@ -7,21 +7,29 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.ext.dispatcher import run_async
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.error import TelegramError, Unauthorized, BadRequest,TimedOut, ChatMigrated, NetworkError
-import logging, urllib, json, sys, re, html, urllib2, unicodedata, MySQLdb, time
+import logging, urllib, json, sys, re, html, unicodedata, MySQLdb, time
 from requests import get, post, exceptions
 import config
 import strings
 import antispam
 import util
+try:
+    import urllib.request as urllib2
+except ImportError:
+    import urllib2
+from importlib import reload
 
-reload(sys)  
-sys.setdefaultencoding('utf8')
 
 def help_message(bot, update):
   if update.message.from_user.id in config.admin_id or bot.get_chat_member(update.message.chat_id, 
                                                                                    update.message.from_user.id).status in ["creator", "administrator"]:
     
     bot.send_message(update.message.chat_id, strings.HELP_MESSAGE, parse_mode=ParseMode.HTML)
+    bot.delete_message(update.message.chat_id, update.message.message_id)
+
+def restart(bot, update):
+  if update.message.from_user.id in config.super_admin_id:
+    bot.send_message(update.message.chat_id, strings.RESTART, parse_mode=ParseMode.HTML)
 
 def safenames(bot, update):
   if update.message.from_user.id in config.admin_id or bot.get_chat_member(update.message.chat_id, 
@@ -30,7 +38,7 @@ def safenames(bot, update):
     db=MySQLdb.connect(config.database['server'],config.database['user'],config.database['password'],config.database['name'])
     db.autocommit(True)
     cur=db.cursor()
-    cur.execute("SELECT * FROM SafeNames WHERE Chat_ID = '"+db.escape_string(str(chat_id))+"'")
+    cur.execute("SELECT * FROM SafeNames WHERE Chat_ID = '"+str(chat_id)+"'")
     sns=""
     for row in cur.fetchall():
       sns=sns+"- @"+str(row[1])+"\n"
@@ -56,11 +64,11 @@ def safe(bot, update, remove=False):
           db.autocommit(True)
           cur=db.cursor()
           if remove == False:
-            cur.execute("INSERT IGNORE INTO SafeNames (Name, Chat_ID) VALUES ('"+db.escape_string(str(word))+"', '"+str(update.message.chat_id)+"')")
+            cur.execute("INSERT IGNORE INTO SafeNames (Name, Chat_ID) VALUES ('"+str(word)+"', '"+str(update.message.chat_id)+"')")
             u=bot.send_message(update.message.chat_id, (strings.SAFE_NAME_SAVED % (html.escape(str("@"+word)))), parse_mode=ParseMode.HTML)
             util.log_operation('!addsafename:'+str(word), update.message.chat_id, update.message.from_user.id)
           else:
-            cur.execute("DELETE FROM SafeNames WHERE Name = '"+db.escape_string(str(word))+"' AND Chat_ID = '"+str(update.message.chat_id)+"'")
+            cur.execute("DELETE FROM SafeNames WHERE Name = '"+str(word)+"' AND Chat_ID = '"+str(update.message.chat_id)+"'")
             u=bot.send_message(update.message.chat_id, (strings.SAFE_NAME_REMOVED % (html.escape(str("@"+word)))), parse_mode=ParseMode.HTML)
             util.log_operation('!removesafename:'+str(word), update.message.chat_id, update.message.from_user.id)
           bot.delete_message(update.message.chat_id, update.message.message_id)
@@ -98,12 +106,12 @@ def ban(bot, update, unban=False):
                          parse_mode=ParseMode.HTML)
           util.log_operation('!ban:'+str(user_id), chat_id, update.message.from_user.id)
       else:
-        bot.send_message(config.channel_id, (strings.REPORT_USER_UNBAN % (str(update.message.from_user.name), 
+        bot.send_message(CONF_.channel_id, (strings.REPORT_USER_UNBAN % (str(update.message.from_user.name), 
                                                                                str(update.message.chat.title), 
                                                                                str(user_name),
                                                                                str(user_id),
                                                                                util.get_hash(int(chat_id)))), parse_mode=ParseMode.HTML)
-        bot.unban_chat_member(update.message.chat_id, int(user_id))
+        bot.unban_chat_member(update.messCONF_age.chat_id, int(user_id))
         bot.send_message(update.message.chat_id, (strings.USER_UNBAN % str(user_name)), 
                          parse_mode=ParseMode.HTML)
         util.log_operation('!unban:'+str(user_id), chat_id, update.message.from_user.id)
@@ -154,7 +162,7 @@ def add_to_blacklist(bot, update, remove=False):
   
   if remove == False:
     try:
-      cur.execute("INSERT INTO Blacklist (User_ID, Chat_ID) VALUES ("+db.escape_string(str(user_id))+", '"+db.escape_string(str(chat_id))+"')")
+      cur.execute("INSERT INTO Blacklist (User_ID, Chat_ID) VALUES ("+str(user_id)+", '"+str(chat_id)+"')")
       try:
         bot.kick_chat_member(update.message.chat_id, user_id)
       except TelegramError:
@@ -167,7 +175,7 @@ def add_to_blacklist(bot, update, remove=False):
       bot.send_message(update.message.chat_id, (strings.USER_ALREADY_IN_BLACKLIST % str(user_name)))
   else:
     try:
-      cur.execute("DELETE FROM Blacklist WHERE User_ID = ("+db.escape_string(str(user_id))+")")
+      cur.execute("DELETE FROM Blacklist WHERE User_ID = ("+str(user_id)+")")
       try:
         bot.unban_chat_member(update.message.chat_id, int(user_id))
       except TelegramError:
@@ -296,7 +304,8 @@ def get_data(bot, update):
                                                                                     reply.forward_from.username, 
                                                                                     reply.forward_from.first_name, 
                                                                                     reply.forward_from.last_name, 
-                                                                                    reply.forward_from.id, lang, 
+                                                                                    reply.forward_from.id, lang,
+                                                                                    util.get_hash(int(chat_id)),
                                                                                     str(reply.forward_from.is_bot))), parse_mode=ParseMode.HTML)
       else:
         if reply.from_user.language_code is None:
@@ -332,8 +341,8 @@ def list_groups(bot, update):
         status=" [Enabled]"
       else:
         status=" [Disabled]"
-      groups=groups+"- ID: "+str(row[0])+" Title: <b>"+str(row[1])+"</b>\n. . Chat_ID: <code>"+str(row[2])+"</code>"+status+"\n\n"
-    update.message.reply_text(groups, parse_mode=ParseMode.HTML)
+      groups=groups+"- ID: "+str(row[0])+" Chat_ID: <code>"+str(row[2])+"</code>"+status+"\n\n"
+    update.message.reply_text(str(groups), parse_mode=ParseMode.HTML)
     cur.close()
     db.close()
 
@@ -346,7 +355,6 @@ def configure(bot, update, edit=False):
     cur=db.cursor()
     cur.execute("SELECT * FROM Groups WHERE Chat_ID = '"+str(update.message.chat_id)+"'")
     row=cur.fetchone()
-    btns.append(InlineKeyboardButton((strings.CONF_LOG % ("On" if row[4] == 1 else "Off")), callback_data='conf_log'))
     btns.append(InlineKeyboardButton((strings.CONF_ANTISPAM_WORDS % ("On" if row[5] == 1 else "Off")), callback_data='conf_spam_words'))
     btns.append(InlineKeyboardButton((strings.CONF_ANTISPAM_NON_WEST % ("On" if row[11] == 1 else "Off")), callback_data='conf_spam_non_west'))
     btns.append(InlineKeyboardButton((strings.CONF_ANTISPAM_USERNAME % ("On" if row[6] == 1 else "Off")), callback_data='conf_spam_username'))
@@ -389,21 +397,19 @@ def disable(bot, update, force=False, chat_id=False, enable=False):
 
 def configure_edit(bot, update):
   query = update.callback_query
-  aid=re.search('{{(.*)}}', query.message.text).group(1)
-  if int(aid) in config.admin_id or bot.get_chat_member(query.message.chat_id,
-                                                        query.message.from_user.id).status in ["creator", "administrator"]:
-    if query.data == 'conf_log':
-      col="ConfLog"
-    elif query.data == 'conf_spam_words':
-      col="ConfSpamWords"
+  aid = re.search('{{(.*)}}', query.message.text).group(1)
+  if str(aid) == str(query.from_user.id):
+    print("SI")
+    if query.data == 'conf_spam_words':
+      col="ConfOffensive"
     elif query.data == 'conf_spam_non_west':
-      col="ConfSpamNonWest"
+      col="ConfNonWest"
     elif query.data == 'conf_spam_username':
-      col="ConfSpamUsername"
+      col="ConfTelegram"
     elif query.data == 'conf_spam_user':
-      col="ConfSpamUser"
+      col="ConfName"
     elif query.data == 'conf_scam':
-      col="ConfScam"
+      col="ConfAntiscam"
     elif query.data == 'conf_blacklist':
       col="ConfBlacklist"
     elif query.data == 'conf_hammer':
