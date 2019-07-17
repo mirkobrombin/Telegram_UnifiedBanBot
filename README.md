@@ -1,10 +1,11 @@
 <div align="center">
   <img src="https://i.imgur.com/zD9Q9sk.png" width="64">
   <h1 align="center">UnifiedBanBot v.0.9</h1>
+  <p align="center">This Telegram bot checks if new chat users are in blacklist and, with a positive result, blocks them.</p>
   <h2>DEPRECATED! Do not use this bot in production!</h2>
   <p align="center">The new version 2.0 was designed from scratch and is online and operational on @unifiedban_bot. The source code will be published as soon as possible (Normal working times).</p>
-  <p>
-  <p align="center">This Telegram bot checks if new chat users are in blacklist and, with a positive result, blocks them.</p>
+  <h2>Warning</h2>
+  <p align="center">This is a hard-coded version, deprecated and logically incorrect. We have written a new version from scratch and the source will soon be online, time to document it.</p>
 </div>
 <br/>
 
